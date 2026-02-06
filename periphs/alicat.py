@@ -63,7 +63,7 @@ class AlicatBaseDF(utils.PeriphDF):
     def generate(cls,unit_id:str):
         return cls(
             unit_id=unit_id,
-            pressure = round(uniform(1,12),2)
+            pressure = round(uniform(0.8,1.6),2)
         ) 
 
     def mutate(self,exclude:list=[]):
@@ -73,7 +73,7 @@ class AlicatBaseDF(utils.PeriphDF):
         names = [n for n in names if n not in exclude]
         for name in names:
             try:
-                val = gauss(getattr(self,name),getattr(self,name)*0.1)
+                val = gauss(getattr(self,name),getattr(self,name)*0.05)
             except ValueError:
                 val = None
             setattr(self,name,round(val,2))
@@ -123,7 +123,7 @@ class AlicatMassFlowDF(AlicatBaseDF):
         """
         return cls(
             unit_id=unit_id,
-            pressure = round(uniform(1,12),2),
+            pressure = round(uniform(0.8,1.6),2),
             temp = round(uniform(15,25),2),
             vflow = round(uniform(40,50),2),
             mflow = round(gauss(1000),2),
@@ -135,7 +135,10 @@ class AlicatMassFlowDF(AlicatBaseDF):
     
     def mutate(self, exclude = ['setpoint','mflow']):
         super().mutate(exclude)
-        self.mflow = round(gauss(self.setpoint),2)
+        if self.setpoint > 0:
+            self.mflow = abs(round(gauss(self.setpoint,sigma=0.2),2))
+        else:
+            self.mflow = 0.0
 
 class AlicatBase:
     
@@ -167,7 +170,7 @@ class AlicatBase:
     def _mock_load_data(cls, unit_id:str) -> dict:
         p = Path(f'periphs/.mock/{unit_id}.json')
         if not p.exists():
-            p.parent.mkdir()
+            p.parent.mkdir(exist_ok=True)
             return {}
         else:
             return json.loads(p.read_text())    
@@ -178,7 +181,7 @@ class AlicatBase:
                            ):
         p = Path(f'periphs/.mock/{unit_id}.json')
         if not p.exists():
-            p.parent.mkdir()
+            p.parent.mkdir(exist_ok=True)
         p.write_text(json.dumps(data))
 
 class AlicatFlowController(AlicatBase):
@@ -195,13 +198,15 @@ class AlicatFlowController(AlicatBase):
     async def write_gas(self):
         pass
     
-    async def write_setpoint(self, value:float, units:AlicatFlowUnits|None=None):
+    async def write_setpoint(self, value:float, units:AlicatFlowUnits|None=None) -> bool:
         cmd = f'{self.unit_id}{AlicatCommands.QUERY_SETPOINT} {value} {"" if not units else units}'
         try:
             line = await self.serial.query(cmd.strip())
+            if line is not None: return True
         except Exception as e:
             logger.error(f'Unable to write setupoint to flow controller: {e}')
-    
+        return False
+
     @classmethod
     def mock_command_map(cls,command:str):
         parsed_line = cls.parse_command(command)

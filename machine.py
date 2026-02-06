@@ -1,9 +1,59 @@
 import periphs
 import models
 import asyncio
+import time
 from dataclasses import asdict
 from loguru import logger
 from typing import Optional
+
+async def event_handler(test_rig:TestRig,
+                        event_q:asyncio.Queue,
+                        ):
+    while True:
+
+        try:
+            event:models.Event =  await event_q.get()        
+            status = None
+
+            match(event.name):
+
+                case models.EventNames.STATE_CHANGE:
+                    logger.debug(f'Entering state "{event.new_state}"')
+                    if event.new_state == models.States.FAULT: 
+                        # status = await abort_test(event.reason)
+                        pass
+                    elif event.new_state == models.States.IDLE:
+                        pass
+                        # await status = test_rig.change_setpoint(0)
+                    elif event.new_state == models.States.ACTIVE:
+                        status = True     
+                    else:
+                        status = True                      
+                    
+                    if status:
+                        pass
+                        # test_rig.state_manager.state = event.new_state
+                        
+                case models.EventNames.STOP_BUTTON:
+                    logger.debug('Handling stop button event')
+                    await event_q.put(models.StateChangeEvent(new_state=models.States.IDLE))
+
+                case models.EventNames.CHANGE_SETPOINT:
+                    logger.debug(f'Changing setpoint to {event.value}')
+                    status = await test_rig.change_setpoint(event.value)
+
+                case _:
+                    logger.warning('Unhandled event')
+                
+            if status == False:
+                if event.retry:
+                    logger.warning('Event not handled correctly, retrying')
+                    await event_q.put(event)
+                else:
+                    logger.warning('Event not handled corectly, not resubmitting')
+                       
+        except Exception as ex:
+            logger.exception('Exception in event handler')
 
 class TestRig:
 
@@ -125,4 +175,26 @@ class TestRig:
 
     async def report_metrics(self):
         print(self._metrics.flatten())
-        await asyncio.sleep(1)
+        pass
+    
+    def fetch_flat_metrics(self) -> dict:
+        return self._metrics.flatten()
+
+    async def change_setpoint(self, val: float):
+        await self.flow.write_setpoint(val)
+
+    async def do_supervisory_control(self,event_q:asyncio.Queue):
+        shutoff_point = self.config.low_dp.full_scale_max - self.config.low_dp.full_scale_max*0.05 
+        stop_requested = 0
+        while True:
+            if self._metrics.low_dp.pressure >= shutoff_point:
+                if time.time() - stop_requested > 30:
+                    logger.warning('Full scale range exceeded on pressure sensor, stopping flow')
+                    event = models.SetpointEvent(retry=True,value=0)
+                    stop_requested = event.timestamp
+                    await event_q.put(event)
+                else:
+                    logger.debug('Full scale range exceeded on pressure sensor,stop request already sent')                    
+            
+            await asyncio.sleep(1)
+            

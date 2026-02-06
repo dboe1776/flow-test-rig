@@ -223,7 +223,7 @@ class MockSerialDevice:
                 return None
 
         response = self._response_mapper(command)
-        logger.success(f'Responding with mock line: {response}')
+        logger.debug(f'Responding with mock line: {response}')
         return response
 
     async def write_only(self, command: str) -> bool:

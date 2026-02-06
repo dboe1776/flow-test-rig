@@ -30,7 +30,7 @@ def load_test_rig_config(
 
     try:
         config = Binder[TestRigConfig].parse_toml(path)
-        config.__post_init__()
+        # config.__post_init__()
         return config
 
     except Exception as e:
@@ -45,13 +45,13 @@ if __name__ == "__main__":
         cfg = load_test_rig_config()
         logger.info("Config loaded successfully")
         logger.info(f"Running in {'mock' if cfg.mock else 'standard'} mode")
-        logger.info(f"Scale units        : {cfg.scale.units}")
+        logger.info(f"Scale units        : {cfg.mass.units}")
         logger.info(
             f"Shared serial port  : "
             f"{cfg.alicat_shared.serial.port if cfg.alicat_shared.serial else 'None (per-device only)'}"
         )
-        logger.info(f"Flow unit           : {cfg.flow_control.flow_unit}")
-        logger.info(f"Flow full-scale max : {cfg.flow_control.full_scale_max}")
+        logger.info(f"Flow unit           : {cfg.flow.flow_unit}")
+        logger.info(f"Flow full-scale max : {cfg.flow.full_scale_max}")
     except Exception as e:
         logger.error("Config loading failed")
         logger.exception(e)

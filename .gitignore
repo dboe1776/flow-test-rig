@@ -12,3 +12,5 @@ wheels/
 scratchpad.ipynb
 periphs/.mock
 archive/
+logs/
+st-data/
