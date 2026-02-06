@@ -14,3 +14,5 @@ periphs/.mock
 archive/
 logs/
 st-data/
+config.toml
+output/

@@ -4,6 +4,7 @@ import models
 import datetime as dt
 import json
 import csv
+from time import time
 from pathlib import Path
 from loguru import logger
 
@@ -23,7 +24,7 @@ class DataManager:
             elif isinstance(sink, models.CsvSink):
                 handler = CsvHandler(sink)
             elif isinstance(sink, models.InfluxSink):
-                # handler = InfluxHandler(sink)  # you'll implement this later
+                # handler = InfluxHandler(sink) 
                 pass
             else:
                 continue
@@ -49,12 +50,22 @@ class BaseDataHandler:
     def __init__(self, config: models.AnyDataSink):
         self.config = config
         self._initialized = False
+        self.last_posted = 0 
 
     def initialize(self) -> None:
         """Called once before first handle() — can be overridden."""
         pass
 
-    async def handle(self, record: models.TestRigDF) -> None:
+    async def handle(self, record: models.TestRigDF) -> bool:
+        """Process one measurement record.
+
+        Subclasses must implement this.
+        """
+        if self.check_time():
+            status = await self._handle(record=record)
+            if status: self.last_posted = time()
+
+    async def _handle(self, record: models.TestRigDF) -> bool:
         """Process one measurement record.
 
         Subclasses must implement this.
@@ -64,6 +75,12 @@ class BaseDataHandler:
     async def close(self) -> None:
         """Optional cleanup hook (files, connections, etc.)."""
         pass
+    
+    def check_time(self) -> bool:
+        if (time() - self.last_posted) >= self.config.sample_period:
+            return True 
+        else: 
+            return False
 
 class JsonHandler(BaseDataHandler):
     """Writes records as newline-delimited JSON (JSONL / NDJSON).
@@ -71,7 +88,7 @@ class JsonHandler(BaseDataHandler):
     Creates one new file per handler instance (per app start).
     """
 
-    type = "json_folder"
+    type = "json_file"
 
     def __init__(self, config: models.JsonFolderSink):
         super().__init__(config)
@@ -93,7 +110,7 @@ class JsonHandler(BaseDataHandler):
         # Optional: touch file or write header comment
         self.filepath.touch(exist_ok=True)
 
-    async def handle(self, record: models.TestRigDF) -> None:
+    async def _handle(self, record: models.TestRigDF) -> None:
         try:
             # Convert record to dict (adjust based on your TestRigDF structure)
             data = record.flatten()
@@ -104,7 +121,9 @@ class JsonHandler(BaseDataHandler):
             # Simple async file append (or use aiofiles if you prefer)
             async with asyncio.Lock():  # protect concurrent writes if needed
                 with self.filepath.open("a", encoding="utf-8") as f:
-                    f.write(line)
+                    f.write(line)            
+
+            return True
 
         except Exception as e:
             logger.exception(f"Failed to write JSON record to {self.filepath}: {e}")
@@ -135,7 +154,7 @@ class CsvHandler(BaseDataHandler):
 
         logger.info(f"CSV handler writing to: {self.filepath}")
 
-    async def handle(self, record: models.TestRigDF) -> None:
+    async def _handle(self, record: models.TestRigDF) -> None:
         try:
             # Convert to dict
             data = record.flatten()
@@ -153,7 +172,8 @@ class CsvHandler(BaseDataHandler):
             with self.filepath.open("a", encoding="utf-8", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=self._fieldnames)
                 writer.writerow(data)
-
+            return True
+        
         except Exception as e:
             logger.exception(f"Failed to write CSV record to {self.filepath}: {e}")
 

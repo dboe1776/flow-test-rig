@@ -69,7 +69,7 @@ class DiffPressConfig(AlicatConfig):
     """Differential pressure sensor."""
     pass  # extend later if needed (e.g. damping, averaging)
 
-SINK_TYPE_JSON_FOLDER = "json_folder"
+SINK_TYPE_JSON_FOLDER = "json_file"
 SINK_TYPE_INFLUXDB    = "influxdb"
 
 @dataclass(kw_only=True)
@@ -81,13 +81,13 @@ class BaseDataSink:
 
 @dataclass(kw_only=True)
 class JsonFolderSink(BaseDataSink):
-    type: Literal["json_folder"] = 'json_folder'
-    folder: Path = field(default_factory=lambda: Path("st-data", "records"))
+    type: Literal["json_file"] = 'json_file'
+    folder: Path = field(default_factory=lambda: Path("output", "records","json-data"))
 
 @dataclass(kw_only=True)
 class CsvSink(BaseDataSink):
     type: Literal["csv_file"] = "csv_file"
-    folder: Path = field(default_factory=lambda: Path("st-data", "records"))
+    folder: Path = field(default_factory=lambda: Path("output", "records","csv-data"))
     # Optional: delimiter = ",", quotechar = '"', etc. if needed later
 
 @dataclass(kw_only=True)

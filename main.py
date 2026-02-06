@@ -25,19 +25,21 @@ data_manager = DataManager(test_rig.config.data_sinks)
 async def flow_tasks(stop_flag: asyncio.Event,
                      on_metrics_update = None):
     print("Hello from st-test-rig!")
-    
+    metrics_updated_flag = asyncio.Event()
+
     async def update_metrics_loop():
         while True:
             await test_rig.update_metrics()
+            metrics_updated_flag.set()
             if on_metrics_update is not None:
                 on_metrics_update(test_rig.fetch_flat_metrics())
             await asyncio.sleep(1)
     
     async def report_metrics_loop():
         while True:
-            await test_rig.report_metrics()
+            await metrics_updated_flag.wait()
+            metrics_updated_flag.clear()
             await data_manager.handle_data(test_rig._metrics)
-            await asyncio.sleep(10)
 
     try:
         async with asyncio.TaskGroup() as tg:

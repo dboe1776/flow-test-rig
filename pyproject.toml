@@ -1,5 +1,5 @@
 [project]
-name = "st-test-rig"
+name = "flow-test-rig"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

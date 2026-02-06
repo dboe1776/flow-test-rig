@@ -24,6 +24,8 @@ def load_test_rig_config(
         RuntimeError: Binding or validation failed
     """
     path = Path(path)
+    if not path.exists():
+        path = Path('default_config.toml')
 
     if not path.is_file():
         raise FileNotFoundError(f"Config file not found: {path.resolve()}")
