@@ -126,7 +126,6 @@ class AlicatMassFlowDF(AlicatBaseDF):
             vflow = round(uniform(40,50),2),
             mflow = round(gauss(1000),2),
             setpoint = 1000,
-            tflow = round(uniform(12000,13000),1),
             gas = 'Air',
             status = 'HLD'
             ) 

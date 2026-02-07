@@ -74,7 +74,7 @@ class ADEK30KL:
         self.serial = serial_handler
 
     async def fetch_data(self) -> ADEK30KL_DF:
-        line = await self.serial.query(ADEK30KL_COMMANDS.DATA_REQUEST)
+        line = await self.serial.query(ADEK30KL_COMMANDS.DATA_REQUEST + '\r\n')
         
         if line is None:
             logger.warning('No data received')
@@ -87,7 +87,20 @@ class ADEK30KL:
             logger.error(f'Unable to parse line: "{e}"')
         except Exception:
             pass
-            
+
+    async def tare(self) -> bool:
+        line = await self.serial.query(ADEK30KL_COMMANDS.TARE + '\r\n') 
+        logger.info('Zeroing Scale')     
+        if line is None:
+            logger.warning('No data received')
+            return
+        try:
+            if line.strip() == ADEK30KL_COMMANDS.TARE: return True
+        except (ValueError,TypeError) as e:
+            logger.error(f'Unable to parse line: "{e}"')
+        except Exception:
+            pass            
+
 
     @classmethod
     def mock_command_map(cls, command:str) -> str|None:

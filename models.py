@@ -138,6 +138,7 @@ class TestRigConfig:
 
 class EventNames(StrEnum):
     CHANGE_SETPOINT = 'change_setpoint'
+    TARE_SCALE = 'tare_scale'
     STOP_BUTTON = 'stop_button'
     NULL_EVENT = 'null_event'
     STATE_CHANGE = 'state_change'
@@ -176,6 +177,10 @@ class StopButtonEvent(Event):
 class SetpointEvent(Event):
     name: EventNames = EventNames.CHANGE_SETPOINT
     value: float
+
+@dataclass(kw_only=True)
+class TareScaleEvent(Event):
+    name: EventNames = EventNames.TARE_SCALE
 
 @dataclass(kw_only=True)
 class NullEvent(Event):

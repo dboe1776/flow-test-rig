@@ -42,6 +42,10 @@ async def event_handler(test_rig:TestRig,
                     logger.debug(f'Changing setpoint to {event.value}')
                     status = await test_rig.change_setpoint(event.value)
 
+                case models.EventNames.TARE_SCALE:
+                    logger.debug(f'Zeroing the Scale')
+                    status = await test_rig.zero_scale()
+
                 case _:
                     logger.warning('Unhandled event')
                 
@@ -182,6 +186,9 @@ class TestRig:
 
     async def change_setpoint(self, val: float):
         await self.flow.write_setpoint(val)
+
+    async def zero_scale(self):
+        await self.mass.tare()        
 
     async def do_supervisory_control(self,event_q:asyncio.Queue):
         shutoff_point = self.config.low_dp.full_scale_max - self.config.low_dp.full_scale_max*0.05 

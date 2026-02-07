@@ -154,13 +154,17 @@ class SensorMonitor(App):
             self.exit()
 
         elif cmd == "help":
-            log.write("[dim]Commands: setpoint <value>, help, quit[/]")
+            log.write("[dim]Commands: setpoint <value>, tare, help, quit[/]")
 
         elif 'setpoint' in cmd:
             if len(cmd.split()) == 2:
                 new_setpoint = cmd.split()[-1]
                 log.write(f'Setting setpoint to {new_setpoint}')
                 test_rig_event_q.put_nowait(models.SetpointEvent(retry=True,value=new_setpoint))
+
+        elif cmd == 'tare':
+            log.write(f'Zeroing Scale')
+            test_rig_event_q.put_nowait(models.TareScaleEvent(retry=True))
 
         event.input.clear()
 
