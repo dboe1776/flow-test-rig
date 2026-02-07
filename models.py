@@ -19,10 +19,10 @@ class TestRigDF:
     high_dp: Optional[alicat.AlicatBaseDF] = None
     
     def flatten(self):
-        mass = self.mass.flatten(prefix='mass',exclude=['time','header','unit'])
-        flow = self.flow.flatten(prefix='flow',exclude=['time','unit_id'])
-        low_dp = self.low_dp.flatten(prefix='low_dp',exclude=['time','unit_id'])
-        high_dp = self.high_dp.flatten(prefix='high_dp',exclude=['time','unit_id'])
+        mass = self.mass.flatten(prefix='mass',exclude=['time','header','unit']) if self.mass else {}
+        flow = self.flow.flatten(prefix='flow',exclude=['time','unit_id']) if self.flow else {}
+        low_dp = self.low_dp.flatten(prefix='low_dp',exclude=['time','unit_id']) if self.low_dp else {}
+        high_dp = self.high_dp.flatten(prefix='high_dp',exclude=['time','unit_id']) if self.high_dp else {}
         timestamp = dt.datetime.fromtimestamp(self.time).isoformat(timespec='seconds')
         return {'time':timestamp,**mass,**flow,**low_dp,**high_dp}
 

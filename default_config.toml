@@ -44,14 +44,14 @@ flow-unit = "SLPM"
 
 [high-dp]
 full-scale-min = 0.0
-full-scale-max = 10.0
-unit-id = "B"
+full-scale-max = 5.0
+unit-id = "C"
 pressure-unit = "PSI"
 # no serial shared
 
 [low-dp]
 full-scale-min = 0.0
 full-scale-max = 2.0
-unit-id = "C"
+unit-id = "B"
 pressure-unit = "inH2O"
 # no serial shared

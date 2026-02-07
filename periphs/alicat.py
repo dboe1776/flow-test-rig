@@ -89,7 +89,6 @@ class AlicatMassFlowDF(AlicatBaseDF):
     vflow: Optional[float] = None
     mflow: Optional[float] = None
     setpoint: Optional[float] = None
-    tflow: Optional[float] = None
     gas: Optional[str] = None
     status: Optional[str] = None
 
@@ -107,9 +106,8 @@ class AlicatMassFlowDF(AlicatBaseDF):
                 vflow=parts[3] if len(parts) > 3 and parts[3] != "" else None,
                 mflow=parts[4] if len(parts) > 4 and parts[4] != "" else None,
                 setpoint=parts[5] if len(parts) > 5 and parts[5] != "" else None,
-                tflow=parts[6] if len(parts) > 6 and parts[6] != "" else None,
-                gas=parts[7] if len(parts) > 7 else None,
-                status=parts[8] if len(parts) > 8 else None,
+                gas=parts[6] if len(parts) > 7 else None,
+                status=parts[7] if len(parts) > 8 else None,
             )
 
     @classmethod
