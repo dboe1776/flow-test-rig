@@ -187,18 +187,18 @@ class TestRig:
         shutoff_point = self.config.low_dp.full_scale_max - self.config.low_dp.full_scale_max*0.05 
         stop_requested = 0
         while True:
-            if self._metrics is None: continue
-            try:
-                if self._metrics.low_dp.pressure >= shutoff_point:
-                    if time.time() - stop_requested > 30:
-                        logger.warning('Full scale range exceeded on pressure sensor, stopping flow')
-                        event = models.SetpointEvent(retry=True,value=0)
-                        stop_requested = event.timestamp
-                        await event_q.put(event)
-                    else:
-                        logger.debug('Full scale range exceeded on pressure sensor,stop request already sent')                    
-            except Exception as e:
-                logger.warning('Issue when doing supervisory control')
+            if self._metrics is not None:
+                try:
+                    if self._metrics.low_dp.pressure >= shutoff_point:
+                        if time.time() - stop_requested > 30:
+                            logger.warning('Full scale range exceeded on pressure sensor, stopping flow')
+                            event = models.SetpointEvent(retry=True,value=0)
+                            stop_requested = event.timestamp
+                            await event_q.put(event)
+                        else:
+                            logger.debug('Full scale range exceeded on pressure sensor,stop request already sent')                    
+                except Exception as e:
+                    logger.warning('Issue when doing supervisory control')
             
             await asyncio.sleep(1)
             
