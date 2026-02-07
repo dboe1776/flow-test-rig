@@ -123,7 +123,7 @@ class SimpleSerialDevice:
                     async with asyncio.timeout(effective_timeout):
                         raw = await self._ser.readline_async()
                         if raw:
-                            return raw.decode(self.encoding, errors="replace").rstrip("\r\n")
+                            return raw.decode(self.encoding, errors="replace").strip()
 
                 except asyncio.TimeoutError:
                     logger.debug(f"{self.name}: Timeout on attempt {attempt+1}/{effective_retries+1}: {command}")
@@ -210,7 +210,7 @@ class MockSerialDevice:
         Simulate sending a command and receiving a response.
         Ignores timeout/retries (always "succeeds" instantly or with delay).
         """
-        logger.debug(f'MOCK {self.name} - sending command "{command}"')
+        logger.debug(f'MOCK {self.name} - sending command "{command.strip()}"')
 
         if self._delay > 0:
             await asyncio.sleep(self._delay)
@@ -222,7 +222,7 @@ class MockSerialDevice:
                 logger.debug('Simulating disconnect, no data returned')
                 return None
 
-        response = self._response_mapper(command)
+        response = self._response_mapper(command.rstrip())
         logger.debug(f'Responding with mock line: {response}')
         return response
 

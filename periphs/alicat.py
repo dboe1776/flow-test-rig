@@ -150,7 +150,7 @@ class AlicatBase:
         self.unit_id = unit_id
 
     async def fetch_data(self) -> str:
-        line = await self.serial.query(f'{self.unit_id}{AlicatCommands.POLL_DATA}')
+        line = await self.serial.query(f'{self.unit_id}{AlicatCommands.POLL_DATA}\r')
         return line
     
     @classmethod
@@ -201,7 +201,7 @@ class AlicatFlowController(AlicatBase):
     async def write_setpoint(self, value:float, units:AlicatFlowUnits|None=None) -> bool:
         cmd = f'{self.unit_id}{AlicatCommands.QUERY_SETPOINT} {value} {"" if not units else units}'
         try:
-            line = await self.serial.query(cmd.strip())
+            line = await self.serial.query(cmd.strip()+'\r')
             if line is not None: return True
         except Exception as e:
             logger.error(f'Unable to write setupoint to flow controller: {e}')
