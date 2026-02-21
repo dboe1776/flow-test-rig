@@ -30,6 +30,20 @@ class AlicatCommands(StrEnum):
     TARE_FLOW = 'V'
     TARE_PRESSURE = 'P'
 
+def convert_to_pa(val:float,input_units:AlicatPressureUnits):
+    if val is None: return
+    match(input_units):
+        case AlicatPressureUnits.KPA:
+            return int(val * 1000)
+        case AlicatPressureUnits.MPA:
+            return int(val * 1e6)
+        case AlicatPressureUnits.PSI:
+            return int(val * 6894.757)
+        case AlicatPressureUnits.INH2O:
+            return int(val * 248.84)
+        case _:
+            return val
+
 @dataclass(kw_only=True)
 class AlicatBaseDF(utils.PeriphDF):
     unit_id: str
@@ -44,9 +58,9 @@ class AlicatBaseDF(utils.PeriphDF):
             except ValueError:
                 val = None
             setattr(self,name,val)
-
+        
     @classmethod
-    def parse_line(cls, raw_line:str) -> AlicatBaseDF:
+    def parse_line(cls, raw_line:str, pressure_unit:AlicatPressureUnits) -> AlicatBaseDF:
         parts = raw_line.strip().split()
         if len(parts) < 2:
             raise ValueError(f"Invalid Alicat response (too short): {raw_line!r}")
@@ -54,16 +68,20 @@ class AlicatBaseDF(utils.PeriphDF):
         unit_id = parts[0]
         pressure = parts[1] if len(parts) > 1 else None
 
-        return cls(
+        data = cls(
             unit_id = unit_id,
             pressure = pressure
         )
+
+        if data.pressure is not None:
+            data.pressure = convert_to_pa(data.pressure,pressure_unit)        
+        return data
 
     @classmethod
     def generate(cls,unit_id:str):
         return cls(
             unit_id=unit_id,
-            pressure = round(uniform(0.8,1.6),2)
+            pressure = round(gauss(1),2)
         ) 
 
     def mutate(self,exclude:list=[]):
@@ -93,12 +111,13 @@ class AlicatMassFlowDF(AlicatBaseDF):
     status: Optional[str] = None
 
     @classmethod
-    def parse_line(cls, raw_line:str) -> AlicatMassFlowDF:
+    def parse_line(cls, raw_line:str,
+                   pressure_unit:AlicatPressureUnits) -> AlicatMassFlowDF:
         parts = raw_line.strip().split()
         if len(parts) < 4:
             raise ValueError(f"Invalid Alicat response (too short): {raw_line!r}")
         
-        base = AlicatBaseDF.parse_line(raw_line)
+        base = AlicatBaseDF.parse_line(raw_line,pressure_unit)
 
         return cls(
                 **asdict(base),  # unit_id, pressure, time
@@ -121,8 +140,8 @@ class AlicatMassFlowDF(AlicatBaseDF):
         """
         return cls(
             unit_id=unit_id,
-            pressure = round(uniform(0.8,1.6),2),
-            temp = round(uniform(15,25),2),
+            pressure = round(gauss(1),2),
+            temp = round(gauss(20),2),            
             vflow = round(uniform(40,50),2),
             mflow = round(gauss(1000),2),
             setpoint = 1000,
@@ -141,10 +160,12 @@ class AlicatBase:
     
     def __init__(self,
                  serial_handler: utils.SimpleSerialDevice|utils.MockSerialDevice,
-                 unit_id: str
+                 unit_id: str,
+                 pressure_unit: AlicatPressureUnits
                  ):
         self.serial = serial_handler
         self.unit_id = unit_id
+        self.pressure_unit = pressure_unit
 
     async def fetch_data(self) -> str:
         line = await self.serial.query(f'{self.unit_id}{AlicatCommands.POLL_DATA}\r')
@@ -187,7 +208,7 @@ class AlicatFlowController(AlicatBase):
         line =  await super().fetch_data()
         logger.debug(f'Received line {line}')
         try:
-            data = AlicatMassFlowDF.parse_line(line)
+            data = AlicatMassFlowDF.parse_line(line,self.pressure_unit)
             return data
         except Exception as e:
             logger.error(f'Unable to parse line {line}: "{e}"') 
@@ -256,7 +277,7 @@ class AlicatDiffPressure(AlicatBase):
         line =  await super().fetch_data()
         logger.debug(f'Received line {line}')
         try:
-            data = AlicatBaseDF.parse_line(line)
+            data = AlicatBaseDF.parse_line(line,self.pressure_unit)
             return data
         except Exception as e:
             logger.error(f'Unable to parse line {line}: "{e}"') 

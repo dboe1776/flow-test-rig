@@ -97,11 +97,14 @@ class TestRig:
 
         self.mass = periphs.scale.ADEK30KL(mass_serial)
         self.flow = periphs.alicat.AlicatFlowController(alicat_flow_serial,
-                                                                self.config.flow.unit_id)
+                                                                self.config.flow.unit_id,
+                                                                self.config.flow.pressure_unit)
         self.high_dp = periphs.alicat.AlicatDiffPressure(alicat_pressure_serial,
-                                                               self.config.high_dp.unit_id)
+                                                               self.config.high_dp.unit_id,
+                                                               self.config.high_dp.pressure_unit)
         self.low_dp = periphs.alicat.AlicatDiffPressure(alicat_pressure_serial,
-                                                              self.config.low_dp.unit_id)
+                                                              self.config.low_dp.unit_id,
+                                                              self.config.low_dp.pressure_unit)
 
     def _load_real_devices(self):
 
@@ -129,10 +132,12 @@ class TestRig:
                 name='AlicatFlowSerial'
             )
             self.flow = periphs.alicat.AlicatFlowController(flow_alicat_serial,
-                                                                    self.config.flow.unit_id)
+                                                                    self.config.flow.unit_id,
+                                                                    self.config.flow.pressure_unit)
         elif shared_alicat_serial:
             self.flow = periphs.alicat.AlicatFlowController(shared_alicat_serial,
-                                                                    self.config.flow.unit_id)
+                                                                    self.config.flow.unit_id,
+                                                                    self.config.flow.pressure_unit)
         else:
             raise RuntimeError('No serial device available for flow controller')
 
@@ -142,10 +147,12 @@ class TestRig:
                 name='AlicatHighDPressureSerial'
             )
             self.high_dp = periphs.alicat.AlicatDiffPressure(high_dp_alicat_serial,
-                                                                   self.config.high_dp.unit_id)
+                                                                   self.config.high_dp.unit_id,
+                                                                   self.config.high_dp.pressure_unit)
         elif shared_alicat_serial:
             self.high_dp = periphs.alicat.AlicatDiffPressure(shared_alicat_serial,
-                                                                   self.config.high_dp.unit_id)
+                                                                   self.config.high_dp.unit_id,
+                                                                   self.config.high_dp.pressure_unit)
         else:
             raise RuntimeError('No serial device available for high range pressure sensor')
 
@@ -155,10 +162,12 @@ class TestRig:
                 name='AlicatLowDPressureSerial'
             )
             self.low_dp = periphs.alicat.AlicatDiffPressure(low_dp_alicat_serial,
-                                                                  self.config.low_dp.unit_id)
+                                                                  self.config.low_dp.unit_id,
+                                                                  self.config.low_dp.pressure_unit)
         elif shared_alicat_serial:
             self.low_dp = periphs.alicat.AlicatDiffPressure(shared_alicat_serial,
-                                                                  self.config.low_dp.unit_id)
+                                                                  self.config.low_dp.unit_id,
+                                                                  self.config.low_dp.pressure_unit)
         else:
             raise RuntimeError('No serial device available for low range pressure sensor')
 

@@ -53,5 +53,5 @@ pressure-unit = "PSI"
 full-scale-min = 0.0
 full-scale-max = 2.0
 unit-id = "B"
-pressure-unit = "inH2O"
+pressure-unit = "INH2O"
 # no serial shared

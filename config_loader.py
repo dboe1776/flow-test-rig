@@ -54,6 +54,8 @@ if __name__ == "__main__":
         )
         logger.info(f"Flow unit           : {cfg.flow.flow_unit}")
         logger.info(f"Flow full-scale max : {cfg.flow.full_scale_max}")
+        logger.info(f'Low dP full-scale max : {cfg.low_dp.full_scale_max}')
+        logger.info(f'High dP full-scale max : {cfg.high_dp.full_scale_max}')        
     except Exception as e:
         logger.error("Config loading failed")
         logger.exception(e)
