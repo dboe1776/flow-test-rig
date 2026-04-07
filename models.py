@@ -31,7 +31,10 @@ class TestRigDF:
         timestamp = dt.datetime.fromtimestamp(self.time).isoformat(timespec='seconds')
         return {'time':timestamp,**mass,**flow,**low_dp,**high_dp}
 
-    def to_data_points(self) -> list[DataPoint]:
+    def to_data_points(self,
+                       measurement:str = 'flow-test_rig',
+                       base_tags: dict | None = {}
+                       ) -> list[DataPoint]:
             """Convert the full rig snapshot into DataPoint(s) for daq-tools.
             
             For now we dump EVERYTHING into a single measurement/topic.
@@ -46,14 +49,17 @@ class TestRigDF:
 
             if flat is None:
                 return []
+            
+            if isinstance(base_tags,dict):
+                tags = base_tags
+                tags["id"] = gethostname()
+            else:
+                tags={"id": gethostname()}
 
             point = DataPoint(
                 time=self.time,
-                measurement="flow_test_rig",           # ← single measurement name
-                tags={
-                    "id": gethostname(),
-                    # "mock": str(getattr(test_rig.config, 'mock', False))  # or pull from config if you prefer
-                },
+                measurement=measurement,           # ← single measurement name
+                tags = tags,
                 fields=flat                                # all mass + flow + low_dp + high_dp fields
             )
 
@@ -109,41 +115,18 @@ class DiffPressConfig(AlicatConfig):
     """Differential pressure sensor."""
     pass  # extend later if needed (e.g. damping, averaging)
 
-SINK_TYPE_JSON_FOLDER = "json_file"
-SINK_TYPE_INFLUXDB    = "influxdb"
+@dataclass
+class DaqBufferConfig:
+    """Buffer settings for the JSONL writer."""
+    max_size: int = 100                    # number of records before forcing a dump
+    max_age_seconds: float = 30.0          # force dump after this many seconds
 
-@dataclass(kw_only=True)
-class BaseDataSink:
-    """Fields common to all data sinks"""
-    enabled: bool = True
-    sample_period: int = 60           # seconds
-    name: str = ""                    # optional friendly name for logs/UI
-
-@dataclass(kw_only=True)
-class JsonFolderSink(BaseDataSink):
-    type: Literal["json_file"] = 'json_file'
-    folder: Path = field(default_factory=lambda: Path("output", "records","json-data"))
-
-@dataclass(kw_only=True)
-class CsvSink(BaseDataSink):
-    type: Literal["csv_file"] = "csv_file"
-    folder: Path = field(default_factory=lambda: Path("output", "records","csv-data"))
-    # Optional: delimiter = ",", quotechar = '"', etc. if needed later
-
-@dataclass(kw_only=True)
-class InfluxSink(BaseDataSink):
-    type: Literal["influxdb"] = 'influxdb'
-    url: str
-    user: Optional[str] = None
-    password: Optional[str] = None
-    token: Optional[str] = None
-    org: Optional[str] = None
-    database: str
-    measurement: str = "rig_metrics"
-
-# Union for type narrowing & config validation
-AnyDataSink = Union[JsonFolderSink, InfluxSink, CsvSink]
-DataSinkMap = {c.type:c for c in  BaseDataSink.__subclasses__()}
+@dataclass
+class DaqConfig:
+    watch_dir: Path = field(default_factory=lambda: Path(".daq_watch"))
+    measurement: str = "flow_test_rig"
+    base_tags: dict[str,Any] = field(default_factory=dict)
+    buffer: DaqBufferConfig = field(default_factory=DaqBufferConfig)
 
 @dataclass
 class TestRigConfig:
@@ -154,6 +137,7 @@ class TestRigConfig:
     high_dp: DiffPressConfig
     low_dp: DiffPressConfig
     alicat_shared: AlicatSharedSerial = field(default_factory=AlicatSharedSerial)
+    daq: DaqConfig = field(default_factory=DaqConfig)
 
     def __post_init__(self):
         """Basic consistency checks."""

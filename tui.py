@@ -4,6 +4,7 @@ import machine
 import models
 from daq_tools import DAQIngestor
 from daq_writer import DaqJsonlWriter
+from pathlib import Path
 
 # Windows asyncio fix — must be very early
 if sys.platform == 'win32':
@@ -48,7 +49,7 @@ async def flow_tasks(stop_flag: asyncio.Event,
                      on_metrics_update = None):
     print("Hello from st-test-rig!")
     metrics_updated_flag = asyncio.Event()
-    daq_writer = DaqJsonlWriter()
+    daq_writer = DaqJsonlWriter(test_rig.config.daq)
 
     async def update_metrics_loop():
         while True:
@@ -65,8 +66,12 @@ async def flow_tasks(stop_flag: asyncio.Event,
             await daq_writer.write(test_rig._metrics)                        
 
     async def start_daq_ingestor():
+        if Path('daq_config.toml').exists():
+            config_path = Path('daq_config.toml')
+        else:
+            config_path = Path('default_daq_config.toml')        
         try:
-            async with DAQIngestor.from_config_file("daq_config.toml") as ingestor:
+            async with DAQIngestor.from_config_file(config_path) as ingestor:
                 logger.info("DAQIngestor started — watching for JSONL files")
                 await asyncio.Event().wait()  # run forever until cancelled
         except Exception as e:

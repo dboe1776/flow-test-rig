@@ -20,4 +20,5 @@ output/
 
 data
 daq_watch
+.daq_watch/
 daq_config.toml

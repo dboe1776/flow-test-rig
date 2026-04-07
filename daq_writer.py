@@ -2,8 +2,7 @@ from pathlib import Path
 import asyncio
 import time
 from loguru import logger
-from models import TestRigDF
-from daq_tools.models import DataPoint   # we'll confirm the exact method below
+from models import TestRigDF, DaqConfig
 
 
 class DaqJsonlWriter:
@@ -16,29 +15,28 @@ class DaqJsonlWriter:
 
     def __init__(
         self,
-        watch_dir: Path | str = "daq_watch",
-        max_buffer_size: int = 30,        # lines before dumping a file
-        max_age_seconds: float = 10.0      # force dump even if buffer not full
+        config: DaqConfig
     ):
-        self.watch_dir = Path(watch_dir)
+        self.config = config
+        self.watch_dir = Path(config.watch_dir)
         self.watch_dir.mkdir(parents=True, exist_ok=True)
 
-        self.max_buffer_size = max_buffer_size
-        self.max_age_seconds = max_age_seconds
+        self.max_buffer_size = config.buffer.max_size
+        self.max_age_seconds = config.buffer.max_age_seconds
 
         self._buffer: list[str] = []
         self._last_dump_time = time.time()
         self._lock = asyncio.Lock()
 
         logger.info(f"DAQ buffered writer initialized → watch_dir={self.watch_dir}, "
-                   f"max_buffer={max_buffer_size}, max_age={max_age_seconds}s")
+                   f"max_buffer={self.max_buffer_size}, max_age={self.max_age_seconds}s")
 
     async def write(self, record: TestRigDF) -> None:
         """Add one TestRigDF record (as DataPoint lines) to the buffer.
         Dump to file if buffer is full or too old.
         """
         try:
-            points = record.to_data_points()
+            points = record.to_data_points(self.config.measurement,self.config.base_tags)
 
             new_lines = [p.to_json() + "\n" for p in points]
 

@@ -1,5 +1,13 @@
 mock = true   # If true, program generate fake serial data
 
+[daq]
+watch-dir = ".daq_watch"
+measurement = "flow_test_rig"
+
+[daq.buffer]
+max-size = 30          # lines
+max-age-seconds = 15.0  # force flush
+
 [mass]
 units = "g"
 

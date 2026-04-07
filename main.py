@@ -3,6 +3,7 @@ import sys
 import machine
 import sys
 from rich import print
+from pathlib import Path
 from config_loader import load_test_rig_config
 from loguru import logger
 from daq_writer import DaqJsonlWriter
@@ -29,7 +30,7 @@ async def flow_tasks(stop_flag: asyncio.Event,
                      on_metrics_update = None):
     print("Hello from st-test-rig!")
     metrics_updated_flag = asyncio.Event()
-    daq_writer = DaqJsonlWriter()
+    daq_writer = DaqJsonlWriter(test_rig.config.daq)
 
     async def update_metrics_loop():
         while True:
@@ -46,8 +47,12 @@ async def flow_tasks(stop_flag: asyncio.Event,
             await daq_writer.write(test_rig._metrics)
 
     async def start_daq_ingestor():
+        if Path('daq_config.toml').exists():
+            config_path = Path('daq_config.toml')
+        else:
+            config_path = Path('default_daq_config.toml')
         try:
-            async with DAQIngestor.from_config_file("daq_config.toml") as ingestor:
+            async with DAQIngestor.from_config_file(config_path) as ingestor:
                 logger.info("DAQIngestor started — watching for JSONL files")
                 await asyncio.Event().wait()  # run forever until cancelled
         except Exception as e:

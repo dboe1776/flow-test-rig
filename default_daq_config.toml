@@ -1,0 +1,8 @@
+[inbound]
+watch_dir = ".daq_watch"
+
+[[sinks]]
+name = 'local-json'
+type = "file"
+config.output_path = 'output/json-data/records.jsonl'
+config.format = 'json'
