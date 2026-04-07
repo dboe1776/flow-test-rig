@@ -1,26 +1,5 @@
 mock = true   # If true, program generate fake serial data
 
-[[data-sinks]]
-type        = "json_file"
-enabled     = true
-sample_period = 60
-name = 'json-data'
-
-[[data-sinks]]
-type        = "csv_file"
-enabled     = true
-sample_period = 60
-name = 'csv-data'
-
-# [[data-sinks]]
-# name='influx-test'
-# type        = "influxdb"
-# enabled     = true
-# sample_period = 60
-# url         = "https://influx.example.com:8086"
-# database      = "test-rig-data"
-# measurement = "rig_metrics_v2"
-
 [mass]
 units = "g"
 

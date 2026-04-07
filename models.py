@@ -2,11 +2,16 @@ import json
 import datetime as dt
 import time
 from dataclasses import dataclass, field, asdict
-from typing import Optional, Literal, List, Union, Any
+from typing import Optional, Literal, Union, Any
 from periphs import alicat, scale
-from enum import StrEnum, Enum, auto
+from enum import StrEnum
 from loguru import logger
 from pathlib import Path
+from daq_tools.models import DataPoint
+from socket import gethostname
+
+# Optional: make this configurable later via TestRigConfig
+DEFAULT_WATCH_DIR = Path("daq_watch")
 
 @dataclass(kw_only=True)
 class TestRigDF:
@@ -25,6 +30,34 @@ class TestRigDF:
         high_dp = self.high_dp.flatten(prefix='high_dp',exclude=['time','unit_id']) if self.high_dp else {}
         timestamp = dt.datetime.fromtimestamp(self.time).isoformat(timespec='seconds')
         return {'time':timestamp,**mass,**flow,**low_dp,**high_dp}
+
+    def to_data_points(self) -> list[DataPoint]:
+            """Convert the full rig snapshot into DataPoint(s) for daq-tools.
+            
+            For now we dump EVERYTHING into a single measurement/topic.
+            Easy to split later if needed.
+            """
+
+            # Flatten everything into one big fields dict (this is what you asked for)
+            flat = self.flatten()                     # reuses your existing method
+
+            # Optional: clean up the 'time' key if you don't want it duplicated
+            flat.pop('time', None)
+
+            if flat is None:
+                return []
+
+            point = DataPoint(
+                time=self.time,
+                measurement="flow_test_rig",           # ← single measurement name
+                tags={
+                    "id": gethostname(),
+                    # "mock": str(getattr(test_rig.config, 'mock', False))  # or pull from config if you prefer
+                },
+                fields=flat                                # all mass + flow + low_dp + high_dp fields
+            )
+
+            return [point]
 
 @dataclass
 class SerialConfig:
@@ -121,7 +154,6 @@ class TestRigConfig:
     high_dp: DiffPressConfig
     low_dp: DiffPressConfig
     alicat_shared: AlicatSharedSerial = field(default_factory=AlicatSharedSerial)
-    data_sinks: list[Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Basic consistency checks."""
@@ -136,12 +168,6 @@ class TestRigConfig:
                 "No serial configuration found for any Alicat device. "
                 "Define alicat_shared.serial or a per-device serial."
             )
-
-        if not self.data_sinks:
-            self.data_sinks = [JsonFolderSink(name='json_default')]
-        else:
-            sink_cls = [DataSinkMap.get(sink.get('type')) for sink in self.data_sinks]
-            self.data_sinks = [ sink(**d) for d,sink in zip(self.data_sinks,sink_cls) if sink_cls is not None]
 
 class EventNames(StrEnum):
     CHANGE_SETPOINT = 'change_setpoint'
