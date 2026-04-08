@@ -6,7 +6,7 @@ measurement = "flow_test_rig"
 
 [daq.buffer]
 max-size = 30          # lines
-max-age-seconds = 15.0  # force flush
+max-age-seconds = 30.0  # force flush
 
 [mass]
 units = "g"

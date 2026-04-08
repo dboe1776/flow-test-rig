@@ -125,6 +125,7 @@ class DaqBufferConfig:
 class DaqConfig:
     watch_dir: Path = field(default_factory=lambda: Path(".daq_watch"))
     measurement: str = "flow_test_rig"
+    sample_period_s: int = 10
     base_tags: dict[str,Any] = field(default_factory=dict)
     buffer: DaqBufferConfig = field(default_factory=DaqBufferConfig)
 

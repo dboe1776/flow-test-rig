@@ -2,6 +2,7 @@ import asyncio
 import sys
 import machine
 import models
+import time
 from daq_tools import DAQIngestor
 from daq_writer import DaqJsonlWriter
 from pathlib import Path
@@ -60,10 +61,13 @@ async def flow_tasks(stop_flag: asyncio.Event,
             await asyncio.sleep(1)
     
     async def report_metrics_loop():
+        last_write = 0
         while True:
             await metrics_updated_flag.wait()
             metrics_updated_flag.clear()
-            await daq_writer.write(test_rig._metrics)                        
+            if time.time() - last_write > test_rig.config.daq.sample_period_s:
+                last_write = time.time()
+                await daq_writer.write(test_rig._metrics)                        
 
     async def start_daq_ingestor():
         if Path('daq_config.toml').exists():
